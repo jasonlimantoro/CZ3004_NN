@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, request, url_for, render_template
 from werkzeug.utils import secure_filename
+from modules.nn import recognizer
 import os
 import cv2
 import numpy as np
@@ -40,9 +41,10 @@ def process_image(image):
     :param image:
     :return:
     """
+    recognizer.recognize(image, target='static/images/labelled')
     np_image = np.array(Image.open(image))
-    rotated = cv2.rotate(np_image, cv2.ROTATE_90_CLOCKWISE)
-    return cv2.cvtColor(rotated, cv2.COLOR_BGR2RGB)
+    filename = secure_filename(image.filename)
+    cv2.imwrite(os.path.join(app.config['UPLOAD_FOLDER'], filename), np_image)
 
 
 @app.route('/upload', methods=['POST'])
@@ -58,12 +60,11 @@ def upload_file():
         # submit an empty part without filename
         if file.filename == '':
             return jsonify({
-                'message': 'No file uploaded'
+                'message': 'No file uploaded. Perhaps you forgot to select the file'
             })
         if file and allowed_file(file.filename):
-            processed_image = process_image(file)
+            process_image(file)
             filename = secure_filename(file.filename)
-            cv2.imwrite(os.path.join(app.config['UPLOAD_FOLDER'], filename), processed_image)
             return jsonify({
                 'message': 'Successfully uploaded',
                 'data': {
@@ -74,5 +75,7 @@ def upload_file():
 
 @app.route('/home')
 def home():
-    images = glob.glob(f"{app.config['UPLOAD_FOLDER']}/*.jpg")
+    images = glob.glob(f"{app.config['UPLOAD_FOLDER']}/labelled/*.jpg") +\
+             glob.glob(f"{app.config['UPLOAD_FOLDER']}/labelled/*.jpeg")
+    images = [{"name": os.path.basename(i), "src": i} for i in images]
     return render_template('home.html', images=images)
