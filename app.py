@@ -41,10 +41,10 @@ def process_image(image):
     :param image:
     :return:
     """
-    recognizer.recognize(image, target='static/images/labelled')
+    recognizer.recognize(image, target=f'{UPLOAD_FOLDER}/labelled')
     np_image = np.array(Image.open(image))
     filename = secure_filename(image.filename)
-    cv2.imwrite(os.path.join(app.config['UPLOAD_FOLDER'], filename), np_image)
+    cv2.imwrite(os.path.join(UPLOAD_FOLDER, filename), cv2.cvtColor(np_image, cv2.COLOR_BGR2RGB))
 
 
 @app.route('/upload', methods=['POST'])
