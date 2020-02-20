@@ -5,12 +5,6 @@
 
 {% block style %}
   <style>
-    .container {
-      display: flex;
-    }
-    .image-wrapper {
-      width: 50%;
-    }
     .img-responsive {
       max-width: 100%;
       height: auto;
@@ -19,12 +13,23 @@
   </style>
 {% endblock %}
 {% block body %}
-  <div class="container">
-    Images
-    {% for image in images %}
-      <div class="image-wrapper">
-        <img class="img-responsive" src="{{ image }}" alt="image">
-      </div>
-    {% endfor %}
+  <div>
+    <h1>
+      Images ({{ images|length }})
+    </h1>
+    <div class="ui container three column grid">
+      {% for image in images %}
+        <div class="column">
+          <div class="ui segment">
+            <img class="img-responsive" src="{{ image.src }}" alt="image">
+            <p>{{ image.name }}</p>
+          </div>
+        </div>
+      {% else %}
+        <div>
+         <p>No images</p>
+        </div>
+      {% endfor %}
+    </div>
   </div>
 {% endblock %}
