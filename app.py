@@ -1,13 +1,14 @@
-from flask import Flask, jsonify, request, url_for
+from flask import Flask, jsonify, request, url_for, render_template
 from werkzeug.utils import secure_filename
 import os
 import cv2
 import numpy as np
 from PIL import Image
+import glob
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', static_url_path='/static')
 
-UPLOAD_FOLDER = 'images'
+UPLOAD_FOLDER = 'static/images'
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -69,3 +70,9 @@ def upload_file():
                     'filename': url_for('upload_file', filename=filename),
                 },
             })
+
+
+@app.route('/home')
+def home():
+    images = glob.glob(f"{app.config['UPLOAD_FOLDER']}/*.jpg")
+    return render_template('home.html', images=images)

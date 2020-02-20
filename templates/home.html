@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}
+  Image Recognition
+{% endblock %}
+
+{% block style %}
+  <style>
+    .container {
+      display: flex;
+    }
+    .image-wrapper {
+      width: 50%;
+    }
+    .img-responsive {
+      max-width: 100%;
+      height: auto;
+      display: block;
+    }
+  </style>
+{% endblock %}
+{% block body %}
+  <div class="container">
+    Images
+    {% for image in images %}
+      <div class="image-wrapper">
+        <img class="img-responsive" src="{{ image }}" alt="image">
+      </div>
+    {% endfor %}
+  </div>
+{% endblock %}
