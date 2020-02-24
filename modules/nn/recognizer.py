@@ -8,6 +8,10 @@ import cv2
 import os
 
 
+MAX_BOXES_TO_DRAW = 5
+THRESHOLD = 0.7
+
+
 def scale_down(image, percentage=60):
     width = int(image.shape[1] * percentage / 100)
     height = int(image.shape[0] * percentage / 100)
@@ -89,7 +93,6 @@ def recognize(
 
             print(f"Processing {image.filename}...")
             image_np = np.array(Image.open(image))
-            image_np = scale_down(image_np)
             np.expand_dims(image_np, axis=0)
             output_dict = run_inference_for_single_image(image_np, detection_graph)
             vis_util.visualize_boxes_and_labels_on_image_array(
@@ -101,6 +104,17 @@ def recognize(
                 instance_masks=output_dict.get('detection_masks'),
                 use_normalized_coordinates=True,
                 line_thickness=4,
-                min_score_thresh=0.6,
+                min_score_thresh=THRESHOLD,
             )
             cv2.imwrite(os.path.join(target, image.filename), convert_to_rgba(image_np))
+            detections = []
+            for i in range(MAX_BOXES_TO_DRAW):
+                if output_dict['detection_scores'][i] > THRESHOLD:
+                    class_id = output_dict['detection_classes'][i]
+                    print(f"Found image id {category_index[class_id]['name']} - score: {output_dict['detection_scores'][i]}")
+                    detections.append({
+                        'id': int(class_id),
+                        'name': category_index[class_id]['name'],
+                        'score': float(output_dict['detection_scores'][i])
+                    })
+            return detections

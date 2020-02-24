@@ -41,10 +41,10 @@ def process_image(image):
     :param image:
     :return:
     """
-    recognizer.recognize(image, target=f'{UPLOAD_FOLDER}/labelled')
     np_image = np.array(Image.open(image))
     filename = secure_filename(image.filename)
     cv2.imwrite(os.path.join(UPLOAD_FOLDER, filename), cv2.cvtColor(np_image, cv2.COLOR_BGR2RGB))
+    return recognizer.recognize(image, target=f'{UPLOAD_FOLDER}/labelled')
 
 
 @app.route('/upload', methods=['POST'])
@@ -63,12 +63,13 @@ def upload_file():
                 'message': 'No file uploaded. Perhaps you forgot to select the file'
             })
         if file and allowed_file(file.filename):
-            process_image(file)
+            detections = process_image(file)
             filename = secure_filename(file.filename)
             return jsonify({
                 'message': 'Successfully uploaded',
                 'data': {
                     'filename': url_for('upload_file', filename=filename),
+                    'detections': detections,
                 },
             })
 
