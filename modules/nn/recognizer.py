@@ -23,6 +23,16 @@ def convert_to_rgba(image):
     return cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
 
+def determine_section(xmin, xmax):
+    midpoint = (xmin + xmax) / 2
+    if midpoint <= 0.33:
+        return 0
+    if 0.33 < midpoint < 0.66:
+        return 1
+    else:
+        return 2
+
+
 def recognize(
     image,
     train_dir='modules/nn/training',
@@ -106,15 +116,28 @@ def recognize(
                 line_thickness=4,
                 min_score_thresh=THRESHOLD,
             )
-            cv2.imwrite(os.path.join(target, image.filename), convert_to_rgba(image_np))
             detections = []
+            found = False
             for i in range(MAX_BOXES_TO_DRAW):
                 if output_dict['detection_scores'][i] > THRESHOLD:
+                    found = True
                     class_id = output_dict['detection_classes'][i]
                     print(f"Found image id {category_index[class_id]['name']} - score: {output_dict['detection_scores'][i]}")
+                    ymin, xmin, ymax, xmax = [float(c) for c in output_dict['detection_boxes'][i]]
+                    section = determine_section(xmin, xmax)
+                    print(f"Coordinates: ymin, xmin, ymax, xmax = ({ymin}, {xmin}, {ymax}, {xmax}) ")
                     detections.append({
                         'id': int(class_id),
                         'name': category_index[class_id]['name'],
-                        'score': float(output_dict['detection_scores'][i])
+                        'score': float(output_dict['detection_scores'][i]),
+                        'ymin': ymin,
+                        'xmin': xmin,
+                        'ymax': ymax,
+                        'xmax': xmax,
+                        'section': section,
                     })
+            if found:
+                cv2.imwrite(os.path.join(target, image.filename), convert_to_rgba(image_np))
+            else:
+                print('Not found any known image')
             return detections
