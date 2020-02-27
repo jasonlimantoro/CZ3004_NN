@@ -2,9 +2,6 @@ from flask import Flask, jsonify, request, url_for, render_template
 from werkzeug.utils import secure_filename
 from modules.nn import recognizer
 import os
-import cv2
-import numpy as np
-from PIL import Image
 import glob
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
@@ -36,14 +33,6 @@ def allowed_file(filename):
 
 
 def process_image(image):
-    """
-    Processing the image
-    :param image:
-    :return:
-    """
-    np_image = np.array(Image.open(image))
-    filename = secure_filename(image.filename)
-    cv2.imwrite(os.path.join(UPLOAD_FOLDER, filename), cv2.cvtColor(np_image, cv2.COLOR_BGR2RGB))
     return recognizer.recognize(image, target=f'{UPLOAD_FOLDER}/labelled')
 
 
@@ -79,4 +68,5 @@ def home():
     images = glob.glob(f"{app.config['UPLOAD_FOLDER']}/labelled/*.jpg") +\
              glob.glob(f"{app.config['UPLOAD_FOLDER']}/labelled/*.jpeg")
     images = [{"name": os.path.basename(i), "src": i} for i in images]
+    images = sorted(images, key=lambda x: x['name'], reverse=True)
     return render_template('home.html', images=images)
