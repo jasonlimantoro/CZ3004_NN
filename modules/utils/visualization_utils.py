@@ -742,7 +742,9 @@ def visualize_boxes_and_labels_on_image_array(
         groundtruth_box_visualization_color='black',
         skip_scores=False,
         skip_labels=False,
-        skip_track_ids=False):
+        skip_track_ids=False,
+        area_thresh=.2,
+):
     """Overlay labeled boxes on an image with formatted scores and label names.
 
   This function groups boxes that correspond to the same location
@@ -783,6 +785,7 @@ def visualize_boxes_and_labels_on_image_array(
     skip_scores: whether to skip score when drawing a single detection
     skip_labels: whether to skip label when drawing a single detection
     skip_track_ids: whether to skip track id when drawing a single detection
+    area_thresh: threshold for area image
 
   Returns:
     uint8 numpy array with shape (img_height, img_width, 3) with overlaid boxes.
@@ -843,30 +846,32 @@ def visualize_boxes_and_labels_on_image_array(
     # Draw all boxes onto image.
     for box, color in box_to_color_map.items():
         ymin, xmin, ymax, xmax = box
-        if instance_masks is not None:
+        area = (ymax - ymin) * (xmax - xmin)
+        if instance_masks is not None and area > area_thresh:
             draw_mask_on_image_array(
                 image,
                 box_to_instance_masks_map[box],
                 color=color
             )
-        if instance_boundaries is not None:
+        if instance_boundaries is not None and area > area_thresh:
             draw_mask_on_image_array(
                 image,
                 box_to_instance_boundaries_map[box],
                 color='red',
                 alpha=1.0
             )
-        draw_bounding_box_on_image_array(
-            image,
-            ymin,
-            xmin,
-            ymax,
-            xmax,
-            color=color,
-            thickness=line_thickness,
-            display_str_list=box_to_display_str_map[box],
-            use_normalized_coordinates=use_normalized_coordinates)
-        if keypoints is not None:
+        if area > area_thresh:
+            draw_bounding_box_on_image_array(
+                image,
+                ymin,
+                xmin,
+                ymax,
+                xmax,
+                color=color,
+                thickness=line_thickness,
+                display_str_list=box_to_display_str_map[box],
+                use_normalized_coordinates=use_normalized_coordinates)
+        if keypoints is not None and area > area_thresh:
             draw_keypoints_on_image_array(
                 image,
                 box_to_keypoints_map[box],

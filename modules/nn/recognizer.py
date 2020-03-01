@@ -10,6 +10,7 @@ import os
 
 MAX_BOXES_TO_DRAW = 5
 THRESHOLD = 0.7
+AREA_THRESHOLD = 0.01
 
 
 def scale_down(image, percentage=60):
@@ -114,16 +115,20 @@ def recognize(
                 instance_masks=output_dict.get('detection_masks'),
                 use_normalized_coordinates=True,
                 line_thickness=4,
+                max_boxes_to_draw=MAX_BOXES_TO_DRAW,
                 min_score_thresh=THRESHOLD,
+                area_thresh=AREA_THRESHOLD,
             )
             detections = []
             found = False
             for i in range(MAX_BOXES_TO_DRAW):
-                if output_dict['detection_scores'][i] > THRESHOLD:
+                score = output_dict['detection_scores'][i]
+                ymin, xmin, ymax, xmax = [float(c) for c in output_dict['detection_boxes'][i]]
+                area = (ymax - ymin) * (xmax - xmin)
+                if score > THRESHOLD and area > AREA_THRESHOLD:
                     found = True
                     class_id = output_dict['detection_classes'][i]
-                    print(f"Found image id {category_index[class_id]['name']} - score: {output_dict['detection_scores'][i]}")
-                    ymin, xmin, ymax, xmax = [float(c) for c in output_dict['detection_boxes'][i]]
+                    print(f"Found image id {category_index[class_id]['name']} - score: {score}")
                     section = determine_section(xmin, xmax)
                     print(f"Coordinates: ymin, xmin, ymax, xmax = ({ymin}, {xmin}, {ymax}, {xmax}) ")
                     detections.append({
