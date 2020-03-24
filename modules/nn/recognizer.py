@@ -9,7 +9,7 @@ import os
 
 
 MAX_BOXES_TO_DRAW = 5
-THRESHOLD = 0.7
+THRESHOLD = 0.9
 AREA_THRESHOLD = 0.01
 
 
