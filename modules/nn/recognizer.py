@@ -38,7 +38,8 @@ def recognize(
     image,
     train_dir='modules/nn/training',
     model_dir='modules/nn/inference_graph',
-    target=''
+    target='',
+    debug='',
 ):
     model_name = model_dir
     # Path to frozen detection graph. This is the actual model that is used for the object detection.
@@ -54,7 +55,9 @@ def recognize(
             serialized_graph = fid.read()
             od_graph_def.ParseFromString(serialized_graph)
             tf.import_graph_def(od_graph_def, name='')
-    category_index = label_map_util.create_category_index_from_labelmap(path_to_labels, use_display_name=True)
+    category_index = label_map_util.create_category_index_from_labelmap(
+        path_to_labels, use_display_name=True
+    )
 
     def run_inference_for_single_image(image, graph):
         if 'detection_masks' in tensor_dict:
@@ -63,25 +66,32 @@ def recognize(
             detection_masks = tf.squeeze(tensor_dict['detection_masks'], [0])
             # Reframe is required to translate mask from box coordinates to image coordinates and fit the image size.
             real_num_detection = tf.cast(tensor_dict['num_detections'][0], tf.int32)
-            detection_boxes = tf.slice(detection_boxes, [0, 0], [real_num_detection, -1])
-            detection_masks = tf.slice(detection_masks, [0, 0, 0], [real_num_detection, -1, -1])
+            detection_boxes = tf.slice(
+                detection_boxes, [0, 0], [real_num_detection, -1]
+            )
+            detection_masks = tf.slice(
+                detection_masks, [0, 0, 0], [real_num_detection, -1, -1]
+            )
             detection_masks_reframed = utils_ops.reframe_box_masks_to_image_masks(
-                detection_masks, detection_boxes, image.shape[0], image.shape[1])
+                detection_masks, detection_boxes, image.shape[0], image.shape[1]
+            )
             detection_masks_reframed = tf.cast(
-                tf.greater(detection_masks_reframed, 0.5), tf.uint8)
+                tf.greater(detection_masks_reframed, 0.5), tf.uint8
+            )
             # Follow the convention by adding back the batch dimension
-            tensor_dict['detection_masks'] = tf.expand_dims(
-                detection_masks_reframed, 0)
+            tensor_dict['detection_masks'] = tf.expand_dims(detection_masks_reframed, 0)
         image_tensor = tf.get_default_graph().get_tensor_by_name('image_tensor:0')
 
         # Run inference
-        output_dict = sess.run(tensor_dict,
-                               feed_dict={image_tensor: np.expand_dims(image, 0)})
+        output_dict = sess.run(
+            tensor_dict, feed_dict={image_tensor: np.expand_dims(image, 0)}
+        )
 
         # all outputs are float32 numpy arrays, so convert types as appropriate
         output_dict['num_detections'] = int(output_dict['num_detections'][0])
-        output_dict['detection_classes'] = output_dict[
-            'detection_classes'][0].astype(np.uint8)
+        output_dict['detection_classes'] = output_dict['detection_classes'][0].astype(
+            np.uint8
+        )
         output_dict['detection_boxes'] = output_dict['detection_boxes'][0]
         output_dict['detection_scores'] = output_dict['detection_scores'][0]
         if 'detection_masks' in output_dict:
@@ -94,13 +104,17 @@ def recognize(
             all_tensor_names = {output.name for op in ops for output in op.outputs}
             tensor_dict = {}
             for key in [
-                'num_detections', 'detection_boxes', 'detection_scores',
-                'detection_classes', 'detection_masks'
+                'num_detections',
+                'detection_boxes',
+                'detection_scores',
+                'detection_classes',
+                'detection_masks',
             ]:
                 tensor_name = key + ':0'
                 if tensor_name in all_tensor_names:
                     tensor_dict[key] = tf.get_default_graph().get_tensor_by_name(
-                        tensor_name)
+                        tensor_name
+                    )
 
             print(f"Processing {image.filename}...")
             image_np = np.array(Image.open(image))
@@ -123,26 +137,41 @@ def recognize(
             found = False
             for i in range(MAX_BOXES_TO_DRAW):
                 score = output_dict['detection_scores'][i]
-                ymin, xmin, ymax, xmax = [float(c) for c in output_dict['detection_boxes'][i]]
+                ymin, xmin, ymax, xmax = [
+                    float(c) for c in output_dict['detection_boxes'][i]
+                ]
                 area = (ymax - ymin) * (xmax - xmin)
                 if score > THRESHOLD and area > AREA_THRESHOLD:
                     found = True
                     class_id = output_dict['detection_classes'][i]
-                    print(f"Found image id {category_index[class_id]['name']} - score: {score}")
+                    print(
+                        f"Found image id {category_index[class_id]['name']} - score: {score}"
+                    )
                     section = determine_section(xmin, xmax)
-                    print(f"Coordinates: ymin, xmin, ymax, xmax = ({ymin}, {xmin}, {ymax}, {xmax}) ")
-                    detections.append({
-                        'id': int(class_id),
-                        'name': category_index[class_id]['name'],
-                        'score': float(output_dict['detection_scores'][i]),
-                        'ymin': ymin,
-                        'xmin': xmin,
-                        'ymax': ymax,
-                        'xmax': xmax,
-                        'section': section,
-                    })
+                    print(
+                        f"Coordinates: ymin, xmin, ymax, xmax = ({ymin}, {xmin}, {ymax}, {xmax}) "
+                    )
+                    print(f"Area: {area}")
+                    detections.append(
+                        {
+                            'id': int(class_id),
+                            'name': category_index[class_id]['name'],
+                            'score': float(output_dict['detection_scores'][i]),
+                            'ymin': ymin,
+                            'xmin': xmin,
+                            'ymax': ymax,
+                            'xmax': xmax,
+                            'section': section,
+                        }
+                    )
             if found:
-                cv2.imwrite(os.path.join(target, image.filename), convert_to_rgba(image_np))
+                cv2.imwrite(
+                    os.path.join(target, image.filename), convert_to_rgba(image_np)
+                )
+            if debug:
+                cv2.imwrite(
+                    os.path.join(debug, image.filename), convert_to_rgba(image_np)
+                )
             else:
-                print('Not found any known image')
+                print('Not found any known image', image.filename)
             return detections

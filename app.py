@@ -33,7 +33,7 @@ def allowed_file(filename):
 
 
 def process_image(image):
-    return recognizer.recognize(image, target=f'{UPLOAD_FOLDER}/labelled')
+    return recognizer.recognize(image, target=f'{UPLOAD_FOLDER}/labelled', debug=f'{UPLOAD_FOLDER}/debug')
 
 
 @app.route('/upload', methods=['POST'])
