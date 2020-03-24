@@ -10,6 +10,16 @@
       height: auto;
       display: block;
     }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-gap: 2rem;
+    }
+    .column {
+      padding: 2rem;
+      background-color: #e2e2e2;
+      border-radius: 1rem;
+    }
   </style>
 {% endblock %}
 {% block body %}
@@ -17,7 +27,7 @@
     <h1>
       Images ({{ images|length }})
     </h1>
-    <div class="ui container three column grid">
+    <div class="grid">
       {% for image in images %}
         <div class="column">
           <div class="ui segment">

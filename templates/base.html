@@ -3,14 +3,19 @@
   <head>
     <meta charset="UTF-8">
     <title>{% block title %}{% endblock %}</title>
-    <link rel="stylesheet" href="/static/css/semantic.min.css" />
   </head>
+  <style>
+    html {
+      font-family: Avenir Serif;
+    }
+    .container {
+      padding: 3rem;
+    }
+  </style>
   {% block style %} {% endblock %}
   <body>
     <div class="ui container">
       {% block body %} {% endblock %}
     </div>
-    <script src="/static/js/jquery.min.js"></script>
-    <script src="/static/js/semantic.min.js"></script>
   </body>
 </html>
