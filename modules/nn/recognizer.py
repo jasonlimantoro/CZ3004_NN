@@ -1,6 +1,7 @@
 from modules.utils import visualization_utils as vis_util
 from modules.utils import ops as utils_ops
 from modules.utils import label_map_util
+from modules.utils.helpers import should_consider_image
 import tensorflow as tf
 from PIL import Image
 import numpy as np
@@ -149,15 +150,12 @@ def recognize(image, target='', debug='', meta={}):
                 class_id = output_dict['detection_classes'][i]
 
                 section = determine_section(xmin, xmax)
-                should_consider_image = (
-                    (section == 0 and meta['LeftBack'])
-                    or (section == 1 and meta['LeftLeft'])
-                    or (section == 2 and meta['LeftFront'])
-                )
+                consider = should_consider_image(section=section, meta=meta)
 
                 if score > THRESHOLD and area > AREA_THRESHOLD:
                     print("Section: ", section)
-                    if not should_consider_image:
+                    print("Meta:", meta)
+                    if not consider:
                         print(
                             f"Skipping image because this image should not be considered"
                         )
