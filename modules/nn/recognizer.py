@@ -6,11 +6,17 @@ from PIL import Image
 import numpy as np
 import cv2
 import os
+import pytz
+import datetime
 
 
-MAX_BOXES_TO_DRAW = 5
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.FATAL)
+
+MAX_BOXES_TO_DRAW = 1
 THRESHOLD = 0.9
-AREA_THRESHOLD = 0.02
+AREA_THRESHOLD = 0.03
+TZ = pytz.timezone('Asia/Singapore')
+DATETIME_FORMAT = '%Y%m%d-%H%M'
 
 
 def scale_down(image, percentage=60):
@@ -89,10 +95,13 @@ def run_inference_for_single_image(image, graph, tensor_dict, sess):
     return output_dict
 
 
-def recognize(
-    image, target='', debug='',
-):
+IMAGES_TAKEN = {}
 
+
+def recognize(image, target='', debug='', meta={}):
+
+    os.mkdir(target) if not os.path.exists(target) else None
+    os.mkdir(debug) if not os.path.exists(debug) else None
     with detection_graph.as_default():
         with tf.Session() as sess:
             ops = tf.get_default_graph().get_operations()
@@ -137,13 +146,34 @@ def recognize(
                     float(c) for c in output_dict['detection_boxes'][i]
                 ]
                 area = (ymax - ymin) * (xmax - xmin)
+                class_id = output_dict['detection_classes'][i]
+
+                section = determine_section(xmin, xmax)
+                should_consider_image = (
+                    (section == 0 and meta['LeftBack'])
+                    or (section == 1 and meta['LeftLeft'])
+                    or (section == 2 and meta['LeftFront'])
+                )
+
                 if score > THRESHOLD and area > AREA_THRESHOLD:
+                    print("Section: ", section)
+                    if not should_consider_image:
+                        print(
+                            f"Skipping image because this image should not be considered"
+                        )
+                        print(f"Meta: {meta}")
+                        print(f"Section: {section}")
+                        print(f"image id: {class_id}")
+                        print(f"Image filename: {image.filename}")
+                        continue
+                    if str(class_id) in IMAGES_TAKEN:
+                        print(f'Skipping duplicate for image id {class_id}')
+                        continue
                     found = True
-                    class_id = output_dict['detection_classes'][i]
+                    IMAGES_TAKEN[str(class_id)] = True
                     print(
                         f"Found image id {category_index[class_id]['name']} - score: {score}"
                     )
-                    section = determine_section(xmin, xmax)
                     print(
                         f"Coordinates: ymin, xmin, ymax, xmax = ({ymin}, {xmin}, {ymax}, {xmax}) "
                     )
@@ -161,10 +191,12 @@ def recognize(
                         }
                     )
             rgb_image = convert_to_rgba(image_np)
+            now = datetime.datetime.now(TZ).strftime(DATETIME_FORMAT)
+            filename = f'{now}_{image.filename}'
             if found:
-                cv2.imwrite(os.path.join(target, image.filename), rgb_image)
+                cv2.imwrite(os.path.join(target, filename), rgb_image)
             else:
-                print('Not found any known image', image.filename)
+                print('Not found any known image', filename)
             if debug:
-                cv2.imwrite(os.path.join(debug, image.filename), rgb_image)
+                cv2.imwrite(os.path.join(debug, filename), rgb_image)
             return detections

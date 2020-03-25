@@ -29,9 +29,12 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-def process_image(image):
+def process_image(image, meta):
     return recognizer.recognize(
-        image, target=f'{UPLOAD_FOLDER}/labelled', debug=f'{UPLOAD_FOLDER}/debug'
+        image,
+        target=f'{UPLOAD_FOLDER}/labelled',
+        debug=f'{UPLOAD_FOLDER}/debug',
+        meta=meta,
     )
 
 
@@ -49,9 +52,11 @@ def upload_file():
                 {'message': 'No file uploaded. Perhaps you forgot to select the file'}
             )
         if file and allowed_file(file.filename):
+            # sensor value
+            meta = request.form.to_dict()
             filename = file.filename
             logging.info(f'Processing image {filename}')
-            detections = process_image(file)
+            detections = process_image(file, meta=meta)
             logging.info(f'Processing image {filename} finished')
             return jsonify(
                 {
