@@ -20,13 +20,6 @@ TZ = pytz.timezone('Asia/Singapore')
 DATETIME_FORMAT = '%Y%m%d-%H%M'
 
 
-def scale_down(image, percentage=60):
-    width = int(image.shape[1] * percentage / 100)
-    height = int(image.shape[0] * percentage / 100)
-    dim = (width, height)
-    return cv2.resize(image, dim)
-
-
 def convert_to_rgba(image):
     return cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
