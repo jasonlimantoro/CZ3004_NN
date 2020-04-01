@@ -13,8 +13,8 @@ import datetime
 
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.FATAL)
 
-MAX_BOXES_TO_DRAW = 1
-THRESHOLD = 0.9
+MAX_BOXES_TO_DRAW = 2
+THRESHOLD = 0.97
 AREA_THRESHOLD = 0.03
 TZ = pytz.timezone('Asia/Singapore')
 DATETIME_FORMAT = '%Y%m%d-%H%M'
